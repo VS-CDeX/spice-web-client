@@ -7,44 +7,51 @@ Contact Jose Carlos Norte (jose@eyeos.com) for more information about this softw
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Affero General Public License version 3 as published by the
 Free Software Foundation.
- 
+
 This program is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
 details.
- 
+
 You should have received a copy of the GNU Affero General Public License
-version 3 along with this program in the file "LICENSE".  If not, see 
+version 3 along with this program in the file "LICENSE".  If not, see
 <http://www.gnu.org/licenses/agpl-3.0.txt>.
- 
+
 See www.eyeos.org for more details. All requests should be sent to licensing@eyeos.org
- 
+
 The interactive user interfaces in modified source and object code versions
 of this program must display Appropriate Legal Notices, as required under
 Section 5 of the GNU Affero General Public License version 3.
- 
+
 In accordance with Section 7(b) of the GNU Affero General Public License version 3,
 these Appropriate Legal Notices must retain the display of the "Powered by
-eyeos" logo and retain the original copyright notice. If the display of the 
+eyeos" logo and retain the original copyright notice. If the display of the
 logo is not reasonably feasible for technical reasons, the Appropriate Legal Notices
-must display the words "Powered by eyeos" and retain the original copyright notice. 
+must display the words "Powered by eyeos" and retain the original copyright notice.
  */
 
 wdi.SPICE_INPUT_MOTION_ACK_BUNCH = 8;
+
+function lockChangeAlert () {
+	if (!document.pointerLockElement  &&
+		!document.mozPointerLockElement) {
+		  var e = $('#eventLayer')[0];
+		  e.triedCapturingPointer = false;
+	}
+}
 
 wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	width: null,
 	height: null,
 	canvas: null,
 	ack_wait: 0,
-	mouse_mode: 0,
+	mouse_mode: wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_SERVER,
+	triedCapturingPointer: false,
 	mouse_status: 0,
 	eventLayer: null,
 	counter: 0,
 	mainCanvas: 0,
 	firstTime: true,
-	clientOffsetX: 0,
-	clientOffsetY: 0,
 	magnifier: null,
 	magnifierBackground: null,
 	firstMove: true,
@@ -265,9 +272,10 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 		cnv.id = 'canvas_' + surface.surface_id;
 		cnv.width = surface.width;
 		cnv.height = surface.height;
-		cnv.style.position = 'absolute';
-		cnv.style.top = this.canvasMarginY + 'px';
-		cnv.style.left = this.canvasMarginX + 'px';
+		cnv.style.display = 'block';
+		cnv.style.margin = 'auto';
+		cnv.style["margin-top"] = this.canvasMarginY + 'px';
+		cnv.style.zIndex = '0';
 
 		this.canvas[surface.surface_id] = cnv;
 		this.contexts[surface.surface_id] = cnv.getContext('2d');
@@ -276,22 +284,32 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 			this.mainCanvas = surface.surface_id;
 
 			this.eventLayer = this.createEventLayer('eventLayer', surface.width, surface.height);
+			this.updateMousePointer()
 
 			var evLayer = $(this.eventLayer).css({
-				position: 'absolute',
-				top: this.canvasMarginY + 'px',
-				left: this.canvasMarginX + 'px'
+				display: 'block',
+				margin: 'auto',
+				'margin-top': this.canvasMarginY + 'px'
 			})[0];
+
+			var evLayerWrapper = $('<div id="eventLayerWrapper"></div>').css({
+				position: 'absolute',
+				top: '0',
+			    width: '100%',
+			    height: '100%',
+			    zIndex: '0'
+			})[0];
+			evLayerWrapper.appendChild(evLayer);
 
 			if(this.layer) {
 				this.layer.appendChild(cnv);
-				this.layer.appendChild(evLayer);
+				this.layer.appendChild(evLayerWrapper);
 			} else {
 				document.body.appendChild(cnv);
-				document.body.appendChild(evLayer);
+				document.body.appendChild(evLayerWrapper);
 			}
-			
-			this.enableKeyboard();
+
+			//this.enableKeyboard();
 		}
 
 		//this goes here?
@@ -330,6 +348,7 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 	setCanvasMargin: function(canvasMargin) {
 		this.canvasMarginX = canvasMargin.x;
 		this.canvasMarginY = canvasMargin.y;
+		$('#screen canvas').css({ 'margin-top': this.canvasMarginY + 'px' });
 	},
 
 	createEventLayer: function(event_id, width, height) {
@@ -337,7 +356,6 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 
 		var eventLayer = $('<canvas/>').css({
 			cursor: 'default',
-			position: 'absolute'
 		}).attr({
 				id: event_id,
 				width: width,
@@ -348,12 +366,27 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 			eventLayer.attr('contentEditable', true);
 		}
 
+		eventLayer.requestPointerLock = eventLayer.requestPointerLock || eventLayer.mozRequestPointerLock;
+		document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock;
+
+		if ("onpointerlockchange" in document) {
+			document.addEventListener('pointerlockchange', lockChangeAlert, false);
+		  } else if ("onmozpointerlockchange" in document) {
+			document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+		  }
+
 		eventLayer.bind('touchstart', function(event) {
 			event.preventDefault();
 			var touch = event.originalEvent.touches[0] || event.originalEvent.changedTouches[0];
 			var x = touch.pageX;
 			var y = touch.pageY;
-			self.generateEvent.call(self, 'mousemove', [x + self.clientOffsetX, y + self.clientOffsetY, self.mouse_status]);
+			var offset = $(this).offset();
+			if (self.mouse_mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_CLIENT) {
+				self.generateEvent.call(self, 'mousemove', [x - offset.left, y - offset.top, self.mouse_status, self.mouse_mode]);
+			} else {
+				self.generateEvent.call(self, 'mousemove', [x - offset.left  - wdi.VirtualMouse.lastMousePosition.x,
+					 y - offset.top  - wdi.VirtualMouse.lastMousePosition.y, self.mouse_status, self.mouse_mode]);
+			}
 			if (event.originalEvent.touches.length === 1) {
 				self.enabledTouchMove = true;
 				self.launchRightClick.call(self, x, y);
@@ -382,11 +415,16 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 					self.launchMouseDown(); //fire again
 				}
 
+				var offset = $(this).offset();
+				if (self.mouse_mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_CLIENT) {
+					self.generateEvent.call(self, 'mousemove', [x - offset.left, y - offset.top - 80, self.mouse_status, self.mouse_mode]);
+				} else {
+					self.generateEvent.call(self, 'mousemove', [x - offset.left - wdi.VirtualMouse.lastMousePosition.x,
+						y - offset.top - 80 - wdi.VirtualMouse.lastMousePosition.y, self.mouse_status, self.mouse_mode]);
+				}
 
-				self.generateEvent.call(self, 'mousemove', [x + self.clientOffsetX, y + self.clientOffsetY - 80, self.mouse_status]);
-				var pos = $(this).offset();
-				var myX = x - pos.left;
-				var myY = y - pos.top;
+				var myX = x - offset.left;
+				var myY = y - offset.top;
 
 				//draw magnifier
 				if (self.firstMove) {
@@ -455,7 +493,6 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 				}
 				self.isMouseDown = false;
 				self.generateEvent.call(self, 'mouseup', 0);
-				var pos = $(this).offset();
 
 				self.enabledTouchMove = false;
 				self.firstMove = true;
@@ -482,13 +519,43 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 
 				self.generateEvent.call(self, 'mousedown', button);
 				self.mouse_status = 1;
+
+
+				if (self.mouse_mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_SERVER) {
+					this.triedCapturingPointer = true;
+					app.clientGui.capturePointer();
+				}
 				event.preventDefault();
 			});
 
 			eventLayer['mousemove'](function(event) {
 				var x = event.pageX;
 				var y = event.pageY;
-				self.generateEvent.call(self, 'mousemove', [x + self.clientOffsetX, y + self.clientOffsetY, self.mouse_status]);
+				var offset = $(this).offset();
+				if (self.mouse_mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_CLIENT) {
+					self.generateEvent.call(self, 'mousemove', [x - offset.left, y - offset.top, self.mouse_status, self.mouse_mode]);
+				} else if (this.triedCapturingPointer) {
+					var e = event.originalEvent;
+					var dx = e.movementX  ||
+						e.mozMovementX    ||
+						e.webkitMovementX ||
+						0;
+					var dy = e.movementY  ||
+						e.mozMovementY    ||
+						e.webkitMovementY ||
+						0;
+					// Sometimes mousemove events with dx == dy == 0 are generated.
+					// For instance mouse click in chrome/windows.
+					if (!dx && !dy
+						&& typeof e.movementX == 'undefined'
+						&& typeof e.mozMovementX == 'undefined'
+						&& typeof e.webkitMovementY == 'undefined'
+					) {
+						dx = x - offset.left - wdi.VirtualMouse.lastMousePosition.x;
+						dy = y - offset.top - wdi.VirtualMouse.lastMousePosition.y;
+					}
+					self.generateEvent.call(self, 'mousemove', [dx, dy, self.mouse_status, self.mouse_mode]);
+				}
 				event.preventDefault();
 			});
 
@@ -533,13 +600,8 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 
 	showError: function(message) {
 		wdi.Debug.warn(message);
-		$('<div/>', {
-			id: 'error'
-		}).html(message).css({
-				'background-color': '#ff4141'
-			}).appendTo('body');
-
-		setTimeout("$('#error').remove()", 2000);
+		document.getElementById("overlay").style.visibility = "visible";
+		document.getElementById("error").style.visibility = "visible";
 	},
 
 	generateEvent: function(event, params) {
@@ -566,20 +628,38 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 
 	setMouseMode: function(mode) {
 		this.mouse_mode = mode;
+		if (mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_SERVER) {
+			this.triedCapturingPointer = false;
+			$.nok({
+				message: tr['msg_click_to_capture']
+				});
+		}
+		this.updateMousePointer();
+	},
+
+	updateMousePointer: function() {
+		if(this.eventLayer != null) {
+			if(this.mouse_mode == wdi.SpiceMouseModeTypes.SPICE_MOUSE_MODE_CLIENT) {
+				console.log("Setting cursor to default")
+				$(this.eventLayer).css('cursor', 'default');
+				this.releasePointer();
+			} else {
+				console.log("Setting cursor to none")
+				$(this.eventLayer).css('cursor', 'none');
+			}
+		}
 	},
 
 	handleKey: function(e) {
+		console.log("Type: " + e.type + " keyCode: " + e.keyCode + " charCode: " + e.charCode);
+		document.getElementById("inputmanager").focus();
 		e.data[0].generateEvent.call(e.data[0], e.type, [e]);
 
-		if (wdi.Keymap.isInKeymap(e.keyCode) && e.type !== "keypress") {
+		if ((e.ctrlKey && !e.altKey) ||
+		    (wdi.Keymap.isInKeymap(e.keyCode) && e.type !== "keypress")) {
 			e.preventDefault();
 		}
 		//e.data[0].stuckKeysHandler.handleStuckKeys(e);
-	},
-
-	setClientOffset: function(x, y) {
-		this.clientOffsetX = x;
-		this.clientOffsetY = y;
 	},
 
 	setClipBoardData: function(data) {
@@ -634,6 +714,19 @@ wdi.ClientGui = $.spcExtend(wdi.EventObject.prototype, {
 				backgroundColor: "black"
 			});
 		}*/
-	}
+	},
 
+	releasePointer() {
+		if (typeof document.exitPointerLock === "function") {
+			document.exitPointerLock();
+		}
+	},
+
+	capturePointer() {
+		if (!document.pointerLockElement
+			&& !document.mozPointerLockElement
+			&& typeof this.eventLayer.requestPointerLock === "function") {
+			this.eventLayer.requestPointerLock();
+		}
+	}
 });

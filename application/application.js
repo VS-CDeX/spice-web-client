@@ -7,27 +7,27 @@ Contact Jose Carlos Norte (jose@eyeos.com) for more information about this softw
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Affero General Public License version 3 as published by the
 Free Software Foundation.
- 
+
 This program is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more
 details.
- 
+
 You should have received a copy of the GNU Affero General Public License
-version 3 along with this program in the file "LICENSE".  If not, see 
+version 3 along with this program in the file "LICENSE".  If not, see
 <http://www.gnu.org/licenses/agpl-3.0.txt>.
- 
+
 See www.eyeos.org for more details. All requests should be sent to licensing@eyeos.org
- 
+
 The interactive user interfaces in modified source and object code versions
 of this program must display Appropriate Legal Notices, as required under
 Section 5 of the GNU Affero General Public License version 3.
- 
+
 In accordance with Section 7(b) of the GNU Affero General Public License version 3,
 these Appropriate Legal Notices must retain the display of the "Powered by
-eyeos" logo and retain the original copyright notice. If the display of the 
+eyeos" logo and retain the original copyright notice. If the display of the
 logo is not reasonably feasible for technical reasons, the Appropriate Legal Notices
-must display the words "Powered by eyeos" and retain the original copyright notice. 
+must display the words "Powered by eyeos" and retain the original copyright notice.
  */
 
 Application = $.spcExtend(wdi.DomainObject, {
@@ -137,8 +137,6 @@ Application = $.spcExtend(wdi.DomainObject, {
             } catch (e) {
                 this.executeExternalCallback('error', 1);
             }
-
-            this.clientGui.setClientOffset(c['clientOffset']['x'], c['clientOffset']['y']);
         }
 		if (c.hasOwnProperty('externalClipboardHandling')) {
 			this.externalClipoardHandling = c['externalClipboardHandling'];
@@ -175,6 +173,7 @@ Application = $.spcExtend(wdi.DomainObject, {
         this.busConnection.addListener('busMessage', this.onBusMessage, this);
         this.busConnection.addListener('error', this.onDisconnect, this);
 		this.timeLapseDetector.addListener('timeLapseDetected', this.onTimeLapseDetected, this);
+        this.enableKeyboard();
     },
 
 	onChannelConnected: function(params) {
@@ -389,59 +388,90 @@ Application = $.spcExtend(wdi.DomainObject, {
         this.lastMultimediaTime = Date.now();
     },
 
+    sendKeyList: function(keys) {
+        for (i = 0; i < keys.length; i++) {
+            this.inputProcess.send([
+                "keydown",
+                [
+                    {
+                        'generated': true,
+                        'type': "keydown",
+                        'keyCode': keys[i],
+                        'charCode': 0
+                    }
+                ]
+            ], "keydown");
+        }
+        keys.reverse();
+        for (i = 0; i < keys.length; i++) {
+            this.inputProcess.send([
+                "keyup",
+                [
+                    {
+                        'generated': true,
+                        'type': "keyup",
+                        'keyCode': keys[i],
+                        'charCode': 0
+                    }
+                ]
+            ], "keyup");
+        }
+    },
+
     sendShortcut: function(shortcut) {
         if(shortcut == wdi.keyShortcutsHandled.CTRLV) {
-            this.inputProcess.send([
-                "keydown",
-                [
-                    {
-                        'generated': true,
-                        'type': "keydown",
-                        'keyCode': 17,
-                        'charCode': 0
-                    }
-                ]
+            this.sendKeyList([17, 86]);
+        }
+    },
 
-            ], "keydown"); //ctrl down
-
-            this.inputProcess.send([
-                "keydown",
-                [
-                    {
-                        'generated': true,
-                        'type': "keydown",
-                        'keyCode': 86,
-                        'charCode': 0
-                    }
-                ]
-
-            ], "keydown"); //v
-
-            this.inputProcess.send([
-                "keyup",
-                [
-                    {
-                        'generated': true,
-                        'type': "keyup",
-                        'keyCode': 86,
-                        'charCode': 0
-                    }
-                ]
-
-            ], "keyup"); //v up
-
-            this.inputProcess.send([
-                "keyup",
-                [
-                    {
-                        'generated': true,
-                        'type': "keyup",
-                        'keyCode': 17,
-                        'charCode': 0
-                    }
-                ]
-
-            ], "keyup"); //ctrl up
+    sendKeystroke: function(keystroke) {
+        if (keystroke == "Ctrl+Alt+Del") {
+            this.sendKeyList([17, 18, 46]);
+        }
+        else if (keystroke == "Win+L") {
+            this.sendKeyList([91, 76]);
+        }
+        else if (keystroke == "Ctrl+Win+Right") {
+            this.sendKeyList([17, 91, 39]);
+        }
+        else if (keystroke == "Ctrl+Win+Left") {
+            this.sendKeyList([17, 91, 37]);
+        }
+        else if (keystroke == "Ctrl+Alt+F1") {
+            this.sendKeyList([17, 18, 112]);
+        }
+        else if (keystroke == "Ctrl+Alt+F2") {
+            this.sendKeyList([17, 18, 113]);
+        }
+        else if (keystroke == "Ctrl+Alt+F3") {
+            this.sendKeyList([17, 18, 114]);
+        }
+        else if (keystroke == "Ctrl+Alt+F4") {
+            this.sendKeyList([17, 18, 115]);
+        }
+        else if (keystroke == "Ctrl+Alt+F5") {
+            this.sendKeyList([17, 18, 116]);
+        }
+        else if (keystroke == "Ctrl+Alt+F6") {
+            this.sendKeyList([17, 18, 117]);
+        }
+        else if (keystroke == "Ctrl+Alt+F7") {
+            this.sendKeyList([17, 18, 118]);
+        }
+        else if (keystroke == "Ctrl+Alt+F8") {
+            this.sendKeyList([17, 18, 119]);
+        }
+        else if (keystroke == "Ctrl+Alt+F9") {
+            this.sendKeyList([17, 18, 120]);
+        }
+        else if (keystroke == "Ctrl+Alt+F10") {
+            this.sendKeyList([17, 18, 121]);
+        }
+        else if (keystroke == "Ctrl+Alt+F11") {
+            this.sendKeyList([17, 18, 122]);
+        }
+        else if (keystroke == "Ctrl+Alt+F12") {
+            this.sendKeyList([17, 18, 123]);
         }
     },
 

@@ -76,7 +76,7 @@ wdi.InputProcess = $.spcExtend(wdi.EventObject.prototype, {
 				})
 			});
 			this.spiceConnection.send(packet);				
-		} else if (type == 'keydown' || type == 'keypress') {
+		} else if (type == 'keydown' ) {
 			scanCodes = wdi.Keymap.getScanCodes(data[1][0], this.altGrCombo, type);
 			if (scanCodes.length == 1 && !data[1][0]['generated']) {
 				if (scanCodes[0][0] == 56) {

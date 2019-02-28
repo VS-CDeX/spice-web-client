@@ -37,6 +37,17 @@ function getURLParameter (name) {
 	) || null;
 }
 
+function createCookie(name, value, days) {
+	var expires;
+	if (days) {
+	  var date = new Date();
+	  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+	  expires = "; expires=" + date.toGMTString();
+	} else {
+	  expires = "";
+	}
+	document.cookie = escape(name) + "=" + escape(value) + expires + "; path=/";
+}
 
 wdi.Debug.debug = false; //enable logging to javascript console
 wdi.exceptionHandling = false; //disable "global try catch" to improve debugging
@@ -205,11 +216,14 @@ function start () {
 		jQuery.getScript("performanceTests/lib/testlauncher.js");
 		jQuery.getScript("performanceTests/tests/wordscroll.js");
 	}
+
+	createCookie("token", getURLParameter('token') || 'token', 1);
+
 	app.run({
 		'callback': f,
 		'context': this,
-		'host': getURLParameter('host') || '10.11.12.100',
-		'port': getURLParameter('port') || 8000,
+		'host': window.location.hostname,
+		'port': window.location.port,
 		'protocol': getURLParameter('protocol') || 'ws',
 		'token': '1q2w3e4r',
 		'vmHost': getURLParameter('vmhost') || false,

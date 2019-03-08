@@ -90,9 +90,9 @@ function start () {
 		} else {
 			wdi.DataLogger.stopTestSession();
 			testSessionStarted = false;
-			var stats = wdi.DataLogger.getStats();
-			console.log(stats);
-			alert(stats);
+			// var stats = wdi.DataLogger.getStats();
+			// console.log(stats);
+			// alert(stats);
 		}
 	});
 

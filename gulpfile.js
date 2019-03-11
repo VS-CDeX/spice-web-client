@@ -22,7 +22,7 @@ gulp.task("css", function() {
 
 gulp.task("pages", function() {
 	return gulp
-		.src(["*.html"])
+		.src(["index.html","extwin.html"])
 		.pipe(
 			htmlmin({
 				collapseWhitespace: true,
@@ -84,6 +84,16 @@ gulp.task("lib", function() {
 		.pipe(gulp.dest("app/assets/js"))
 		.pipe(browserSync.reload({ stream: true, once: true }));
 });
+
+gulp.task("worker", function() {
+	gulp.src("application/WorkerProcess.js")
+		.pipe(concat("WorkerProcess.js"))
+		.pipe(stripDebug())
+		.pipe(uglify())
+		.pipe(rename({ suffix: ".min" }))
+		.pipe(gulp.dest("app/assets/js"))
+		.pipe(browserSync.reload({ stream: true, once: true }));
+});
 gulp.task("js", function() {
 	gulp.src([
 		"network/socket.js",
@@ -124,7 +134,6 @@ gulp.task("js", function() {
 		"keymaps/keymapfr.js",
 		"keymaps/keymapru.js",
 		"keymaps/keymap.js",
-		"application/WorkerProcess.js",
 		"flexvdi/inactivity.js",
 		"flexvdi/flexvdi.js",
 		"flexvdi/extwin.js",
@@ -150,7 +159,7 @@ gulp.task("bs-reload", function() {
 	browserSync.reload();
 });
 
-gulp.task("default", ["css", "pages", "lib", "js", "browser-sync"], function() {
+gulp.task("default", ["css", "pages", "lib", "js", "worker", "browser-sync"], function() {
 	gulp.watch("*/*.css", ["css", "bs-reload"]);
 	gulp.watch("src/js/*.js", ["js", "bs-reload"]);
 	gulp.watch("app/*.html", ['bs-reload']);

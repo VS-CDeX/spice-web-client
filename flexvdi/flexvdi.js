@@ -19,9 +19,9 @@ function toggleMenuBar() {
         var canvas = document.getElementById('canvas_0');
         var eventLayer = document.getElementById('eventLayer');
         if (canvas != null && eventLayer != null) {
-            canvas.style.top = "0px";
-            eventLayer.style.top = "0px";
-            app.clientGui.setCanvasMargin({"x": 0, "y": 0})
+            canvas.style.top = "8px";
+            eventLayer.style.top = "8px";
+            app.clientGui.setCanvasMargin({"x": 0, "y": 8})
             app.sendCommand('setResolution', {
 			    'width': width,
 			    'height': height
@@ -31,12 +31,12 @@ function toggleMenuBar() {
         var canvas = document.getElementById('canvas_0');
         var eventLayer = document.getElementById('eventLayer');
         if (canvas != null && eventLayer != null) {
-            canvas.style.top = "40px";
-            eventLayer.style.top = "40px";
-            app.clientGui.setCanvasMargin({"x": 0, "y": 40})
+            canvas.style.top = "48px";
+            eventLayer.style.top = "48px";
+            app.clientGui.setCanvasMargin({"x": 0, "y": 48})
             app.sendCommand('setResolution', {
                 'width': width,
-                'height': height - 40
+                'height': height - 48
             });
         }
         document.getElementById("login").className = "";

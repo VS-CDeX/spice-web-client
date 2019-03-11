@@ -20,7 +20,7 @@ body
 
     margin-left: auto;
     margin-right: auto;
-    background-color: rgba(0, 161, 193, 0.9);
+    background-color: rgb(0, 161, 193);
     -moz-border-radius: 0px;
     -webkit-border-radius: 0px;
     border-radius: 0px;
@@ -130,7 +130,6 @@ body
     width: 100%;
     height: 100%;
     background-color: #000;
-    opacity: 0.8;
     text-align: center;
     z-index: 2;
 }

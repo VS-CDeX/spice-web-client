@@ -293,7 +293,7 @@ function start () {
 		'vmInfoToken': getURLParameter('vmInfoToken'),
 		'canvasMargin': {
 			'x': 0,
-			'y': 40
+			'y': 48
 		},
 		//'language': navigator.language
 	});
